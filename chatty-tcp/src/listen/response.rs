@@ -18,7 +18,7 @@ pub async fn send_to_broadcast_channel(
     Ok(())
 }
 
-pub async fn send_task(
+pub async fn send_from_broadcast_channel_task(
     writer: Arc<Mutex<OwnedWriteHalf>>,
     mut rx: broadcast::Receiver<ChatResponse>,
     username: String,
@@ -89,7 +89,7 @@ mod tests {
 
         let writer = Arc::new(Mutex::new(writer_half));
         let _handle = tokio::spawn(async move {
-            assert_ok!(send_task(writer, rx, "alice".to_string()).await);
+            assert_ok!(send_from_broadcast_channel_task(writer, rx, "alice".to_string()).await);
         });
 
         let (mut stream, _) = assert_ok!(listener.accept().await);
@@ -120,7 +120,7 @@ mod tests {
 
         let writer = Arc::new(Mutex::new(writer_half));
         let _handle = tokio::spawn(async move {
-            assert_ok!(send_task(writer, rx, "alice".to_string()).await);
+            assert_ok!(send_from_broadcast_channel_task(writer, rx, "alice".to_string()).await);
         });
 
         let (mut stream, _) = assert_ok!(listener.accept().await);

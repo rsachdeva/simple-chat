@@ -1,4 +1,6 @@
-use crate::listen::response::{send_response, send_task, send_to_broadcast_channel};
+use crate::listen::response::{
+    send_from_broadcast_channel_task, send_response, send_to_broadcast_channel,
+};
 use crate::listen::state::RoomState;
 use anyhow::Result;
 use chatty_types::command::ChatCommand;
@@ -52,8 +54,11 @@ pub async fn process_command(
                     info!("Users in room after addition: {:?}", users);
                     info!("Client {} joined as {}", addr, username);
                     let rx = room_state.tx.subscribe();
-                    let send_task_handle =
-                        tokio::spawn(send_task(writer.clone(), rx, username.clone()));
+                    let send_task_handle = tokio::spawn(send_from_broadcast_channel_task(
+                        writer.clone(),
+                        rx,
+                        username.clone(),
+                    ));
                     room_state
                         .task_handles
                         .lock()
