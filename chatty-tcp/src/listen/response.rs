@@ -1,12 +1,13 @@
 use crate::listen::command::RoomError;
 use crate::listen::state::RoomState;
 use anyhow::{Context, Result};
+use broadcast::error::RecvError;
 use chatty_types::response::ChatResponse;
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::tcp::OwnedWriteHalf;
 use tokio::sync::{broadcast, Mutex};
-use tracing::debug;
+use tracing::{debug, info};
 
 pub async fn send_to_broadcast_channel(
     chat_response: ChatResponse,
@@ -23,27 +24,41 @@ pub async fn send_from_broadcast_channel_task(
     mut rx: broadcast::Receiver<ChatResponse>,
     username: String,
 ) -> Result<(), RoomError> {
-    while let Ok(recv_chat_response) = rx.recv().await {
-        debug!(
-            "send_task received from broadcast::Receiver: recv_chat_response  is {:?}",
-            recv_chat_response
-        );
-        let ChatResponse::Broadcast(recv_memo) = recv_chat_response.clone() else {
-            return Err(RoomError::Broadcast(
-                "Failed to get memo from received chat response".to_string(),
-            ));
-        };
-        let recv_username = recv_memo.username.clone();
-        debug!("recv_username in send_task is {:?}", recv_username);
-        debug!("username in send_task is {:?}", username);
+    loop {
+        match rx.recv().await {
+            Ok(recv_chat_response) => {
+                debug!(
+                    "send_task received from broadcast::Receiver: recv_chat_response  is {:?}",
+                    recv_chat_response
+                );
+                let ChatResponse::Broadcast(recv_memo) = recv_chat_response.clone() else {
+                    return Err(RoomError::Broadcast(
+                        "Failed to get memo from received chat response".to_string(),
+                    ));
+                };
+                let recv_username = recv_memo.username.clone();
+                debug!("recv_username in send_task is {:?}", recv_username);
+                debug!("username in send_task is {:?}", username);
 
-        if !recv_username.eq(&username) {
-            debug!(
-                "Sending to -> {} chat response for received username -> {}",
-                username, recv_username
-            );
-            if let Err(e) = send_response(recv_chat_response, writer.clone()).await {
-                debug!("Failed to send response: {:?}", e);
+                if !recv_username.eq(&username) {
+                    debug!(
+                        "Sending to -> {} chat response for received username -> {}",
+                        username, recv_username
+                    );
+                    if let Err(e) = send_response(recv_chat_response, writer.clone()).await {
+                        debug!("Failed to send response: {:?}", e);
+                        break;
+                    }
+                }
+            }
+            Err(RecvError::Lagged(missed)) => {
+                // This condition is very unlikely in normal chat usage with human users.
+                // Only expected during extreme message bursts or potential DoS (Denial of Service) attack
+                info!("Receiver lagged, skipped {} messages", missed);
+                continue;
+            }
+            Err(RecvError::Closed) => {
+                info!("Receiver closed");
                 break;
             }
         }

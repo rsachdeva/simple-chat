@@ -33,6 +33,12 @@ just run-chatty-tcp-client-david-join
 just run-chatty-tcp-client-lucio-join
 ```
 
+For entering username at the prompt:
+
+```shell
+just run-chatty-tcp-client-join-no-username
+```
+
 [Back to Table of Contents](#table-of-contents)
 
 ### Configurations
