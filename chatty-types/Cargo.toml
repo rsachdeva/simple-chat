@@ -8,4 +8,3 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 anyhow = "1.0.93"
 serde = { version = "1.0.215", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
