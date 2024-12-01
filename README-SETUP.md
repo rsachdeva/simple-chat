@@ -1,12 +1,18 @@
 ## Table of Contents
 
+- [Demo](#demo)
 - [Running Server and Client](#running-server-and-client)
 - [Configurations](#configurations)
 - [Running Tests](#running-tests)
 - [Git Hooks Setup](#git-hooks-setup)
+- [GitHub Workflow](#github-workflow)
 - [Clean And Build](#clean-and-build)
 - [Summary of the Responsibilities for crate chatty-types and chatty-tcp in Workspace](#summary-of-the-responsibilities-for-crate-chatty-types-and-chatty-tcp-in-workspace)
 - [Domain Driven Terminology](#domain-driven-terminology)
+
+### Demo
+
+Link to demo: [Watch Demo](demo/Weather-Standup.mp4)
 
 ### Running Server and Client
 
@@ -38,8 +44,6 @@ For entering username at the prompt:
 ```shell
 just run-chatty-tcp-client-join-no-username
 ```
-
-[Back to Table of Contents](#table-of-contents)
 
 ### Configurations
 
@@ -75,6 +79,14 @@ anytime:
 ```bash
 ./.githooks/pre-commit
 ```
+
+[Back to Table of Contents](#table-of-contents)
+
+### GitHub Workflow
+
+The project leverages GitHub Actions to validate chat server client connectivity and executes both unit and integration
+tests.
+The workflow is defined in `.github/workflows/rust.yml`.
 
 [Back to Table of Contents](#table-of-contents)
 
