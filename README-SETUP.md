@@ -12,7 +12,7 @@
 
 ### Demo
 
-Link to demo: [Watch Demo](demo/Weather-Standup.mp4)
+[Demo](demo/Weather-Standup.mp4)
 
 ### Running Server and Client
 
@@ -119,16 +119,16 @@ just build-with-tests
 * TCP-specific transport layer or tightly coupled logic with TCP for now
 * Server and client implementations
 * Client has:
-  -- Sending `command` module as part of the client
-  -- Processing `response` module as part of the client
-  These are part of the `connect` module in the client.
+    - Sending `command` module as part of the client
+    - Processing `response` module as part of the client
+    - These are part of the `connect` module used by the client.
 * Server has:
-  -- Processing `command` module as part of the server
-  -- Sending `response` module as part of the server
-  These are part of the `listen` module in the server.
+    - Processing `command` module as part of the server
+    - Sending `response` module as part of the server
+    - These are part of the `listen` module used by the server.
 
-Bidirectional communication between the client and server is evident based on module names.
-Both have command and response modules: the client sends the commands and processes responses, while the server
+Bidirectional communication between the client and server is clear based on module names.
+Both have `command` and `response` modules: the client sends the commands and processes responses, while the server
 processes commands and sends responses.
 
 [Back to Table of Contents](#table-of-contents)
