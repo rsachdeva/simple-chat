@@ -17,20 +17,14 @@ pub enum RoomError {
     #[error("IO error is: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("IO error is: {0}")]
-    IoAnyhow(#[from] anyhow::Error),
-
     #[error("Json parse error is: {0}")]
     JsonParse(#[from] serde_json::Error),
 
-    #[error("Lock error is: {0}")]
-    Lock(String),
+    #[error("Broadcast receive error is: {0}")]
+    BroadcastReceive(String),
 
-    #[error("Broadcast error is: {0}")]
-    Broadcast(String),
-
-    #[error("Join error is: {0}")]
-    JoinError(#[from] tokio::task::JoinError),
+    #[error("Broadcast send error: {0}")]
+    BroadcastSend(#[from] tokio::sync::broadcast::error::SendError<ChatResponse>),
 }
 pub async fn process_command(
     writer_half: OwnedWriteHalf,
@@ -100,7 +94,7 @@ pub async fn process_command(
                 send_to_broadcast_channel(chat_response, room_state.clone()).await?;
             }
             ChatCommand::Leave(username) => {
-                remove_username(username.clone(), room_state.clone()).await?;
+                remove_username(username.clone(), room_state.clone()).await;
                 debug!("User {} has left", username);
                 if let Some(handle) = room_state.task_handles.lock().await.remove(&username) {
                     info!("Aborting background task for user: {}", username);
@@ -122,18 +116,13 @@ pub async fn process_command(
     Ok(())
 }
 
-pub async fn remove_username(
-    username: String,
-    room_state: Arc<RoomState>,
-) -> Result<(), RoomError> {
+pub async fn remove_username(username: String, room_state: Arc<RoomState>) {
     let mut users = room_state.user_set.lock().await;
     users.remove(&username);
     info!("User {} removed from room", username);
     // list connected users
     let users: Vec<String> = users.iter().cloned().collect();
     info!("Users in room after removal: {:?}", users);
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -156,8 +145,7 @@ mod tests {
         });
 
         // Execute removal
-        let result = remove_username("test_user".to_string(), room_state.clone()).await;
-        assert!(result.is_ok());
+        remove_username("test_user".to_string(), room_state.clone()).await;
 
         // Verify user was removed
         let users = room_state.user_set.lock().await;

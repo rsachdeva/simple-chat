@@ -1,6 +1,6 @@
 use crate::listen::command::RoomError;
 use crate::listen::state::RoomState;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use broadcast::error::RecvError;
 use chatty_types::response::ChatResponse;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use tracing::{debug, info};
 pub async fn send_to_broadcast_channel(
     chat_response: ChatResponse,
     room_state: Arc<RoomState>,
-) -> Result<()> {
+) -> Result<(), RoomError> {
     // send the chat_response to the broadcast channel
     let _ = room_state.tx.send(chat_response)?;
 
@@ -32,7 +32,7 @@ pub async fn send_from_broadcast_channel_task(
                     recv_chat_response
                 );
                 let ChatResponse::Broadcast(recv_memo) = recv_chat_response.clone() else {
-                    return Err(RoomError::Broadcast(
+                    return Err(RoomError::BroadcastReceive(
                         "Failed to get memo from received chat response".to_string(),
                     ));
                 };
@@ -69,17 +69,12 @@ pub async fn send_from_broadcast_channel_task(
 pub async fn send_response(
     chat_response: ChatResponse,
     writer: Arc<Mutex<OwnedWriteHalf>>,
-) -> Result<()> {
+) -> Result<(), RoomError> {
     let serialized = serde_json::to_string(&chat_response)?;
     let mut writer = writer.lock().await;
-    writer
-        .write_all(serialized.as_bytes())
-        .await
-        .context(format!("Failed to send response {:?}", chat_response))?;
-    writer
-        .write_all(b"\n")
-        .await
-        .context("Failed to send newline for framing")?; // Add newline for framing
+    writer.write_all(serialized.as_bytes()).await?;
+
+    writer.write_all(b"\n").await?;
     Ok(())
 }
 
