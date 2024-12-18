@@ -1,0 +1,6 @@
+[env]
+# https://doc.rust-lang.org/cargo/reference/config.html#env
+RUST_LOG = { value = "chatty_types=info,chatty_tcp=info", force = true }
+
+TCP_SERVER_ADDRESS = "localhost"
+TCP_SERVER_PORT = "8081"

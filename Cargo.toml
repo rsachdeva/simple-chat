@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "chatty-tcp",
+    "chatty-types"
+]
+default-members = [
+    "chatty-tcp",
+    "chatty-types"
+]
+
+resolver = "2"

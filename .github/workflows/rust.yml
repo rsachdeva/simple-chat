@@ -1,0 +1,97 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'v*'  # This will match any branch starting with 'v'
+      - 'chatty*'# This will match any branch starting with 'chatty'
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Rust version
+        run: |
+          echo "Installed rustc version:"
+          rustc --version
+          echo "Installed cargo version:"
+          cargo --version
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+
+      - name: Check Just version
+        run: |
+          echo "Installed just version:"
+          just --version
+
+      - name: Build with Tests
+        run: |
+          just build-with-tests
+
+  verify-chat-connection:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Rust version
+        run: |
+          echo "Installed rustc version:"
+          rustc --version
+          echo "Installed cargo version:"
+          cargo --version
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+
+      - name: Check Just version
+        run: |
+          echo "Installed just version:"
+          just --version
+
+      - name: Start Chat Server
+        run: |
+          just run-chatty-tcp-server &
+          sleep 3
+
+      - name: Test Client Connection
+        run: |
+          TCP_SERVER_ADDRESS="localhost" TCP_SERVER_PORT="8081" cargo run --quiet --package chatty-tcp --bin client -- --username "rohit_s" < <(echo -e "send Hello World\nleave")
+  
+  
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Rust version
+        run: |
+          echo "Installed rustc version:"
+          rustc --version
+          echo "Installed cargo version:"
+          cargo --version
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+
+      - name: Check Just version
+        run: |
+          echo "Installed just version:"
+          just --version
+
+      - name: Run unit and integration tests
+        run: just test
