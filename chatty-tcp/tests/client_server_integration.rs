@@ -4,7 +4,7 @@ use chatty_tcp::listen::state::RoomState;
 use chatty_types::config::setup_tracing;
 use chatty_types::config::Component::Server;
 use chatty_types::response::ChatResponse;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
@@ -25,15 +25,10 @@ fn init_tracing_for_tests() {
 async fn single_client() {
     init_tracing_for_tests();
     // Set up room state
-    let user_set = Mutex::new(HashSet::new());
     let (tx, _rx) = broadcast::channel::<ChatResponse>(100);
     let task_handles = Mutex::new(HashMap::new());
 
-    let room_state = Arc::new(RoomState {
-        user_set,
-        tx,
-        task_handles,
-    });
+    let room_state = Arc::new(RoomState { tx, task_handles });
 
     // Start the server in a background task
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -83,8 +78,8 @@ async fn single_client() {
 
     // // Verify user is there
     let room_state_for_removal = room_state.clone();
-    let users = room_state_for_removal.user_set.lock().await;
-    assert!(users.contains("alone"));
+    let lookup = room_state_for_removal.task_handles.lock().await;
+    assert!(lookup.contains_key("alone"));
 
     // leave command
     let leave_command = r#"{"Leave":"alone"}"#;
@@ -104,12 +99,7 @@ async fn multiple_clients() {
     let task_handles = Mutex::new(HashMap::new());
 
     // Set up room state
-    let user_set = Mutex::new(HashSet::new());
-    let room_state = Arc::new(RoomState {
-        user_set,
-        tx,
-        task_handles,
-    });
+    let room_state = Arc::new(RoomState { tx, task_handles });
     let state = room_state.clone();
 
     // Start the server in a background task
@@ -194,9 +184,9 @@ async fn multiple_clients() {
     let expected_message2 = r#"{"Broadcast":{"username":"carl","content":"Left"}}"#;
     assert_eq!(broadcast_message, expected_message2);
 
-    let user_set = state.user_set.lock().await;
-    assert_eq!(user_set.len(), 1);
-    assert!(user_set.contains("david"));
+    let lookup = state.task_handles.lock().await;
+    assert_eq!(lookup.len(), 1);
+    assert!(lookup.contains_key("david"));
 
     // Clean up
     server_handle.abort();
