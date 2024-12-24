@@ -40,13 +40,10 @@ pub async fn process_command(
         let command: ChatCommand = serde_json::from_str(&line)?;
         match command {
             ChatCommand::Join(username) => {
-                let mut users = room_state.user_set.lock().await;
-                let user_already_exist = users.contains(&username);
+                let user_already_exist =
+                    room_state.task_handles.lock().await.contains_key(&username);
 
                 let chat_response = if !user_already_exist {
-                    users.insert(username.clone());
-                    info!("Users in room after addition: {:?}", users);
-                    info!("Client {} joined as {}", addr, username);
                     let rx = room_state.tx.subscribe();
                     let send_task_handle = tokio::spawn(send_from_broadcast_channel_task(
                         writer.clone(),
@@ -58,6 +55,11 @@ pub async fn process_command(
                         .lock()
                         .await
                         .insert(username.clone(), send_task_handle);
+                    info!(
+                        "Users in room after addition: {:?}",
+                        room_state.task_handles.lock().await.keys()
+                    );
+                    info!("Client {} joined as {}", addr, username);
                     send_to_broadcast_channel(
                         ChatResponse::Broadcast(ChatMemo {
                             username: username.clone(),
@@ -96,10 +98,7 @@ pub async fn process_command(
             ChatCommand::Leave(username) => {
                 remove_username(username.clone(), room_state.clone()).await;
                 debug!("User {} has left", username);
-                if let Some(handle) = room_state.task_handles.lock().await.remove(&username) {
-                    info!("Aborting background task for user: {}", username);
-                    handle.abort();
-                }
+
                 debug!("User {} has left so sending broadcast message", username);
                 send_to_broadcast_channel(
                     ChatResponse::Broadcast(ChatMemo {
@@ -117,40 +116,45 @@ pub async fn process_command(
 }
 
 pub async fn remove_username(username: String, room_state: Arc<RoomState>) {
-    let mut users = room_state.user_set.lock().await;
-    users.remove(&username);
+    let mut lookup = room_state.task_handles.lock().await;
+    if let Some(handle) = lookup.remove(&username) {
+        info!("Aborting background task for user: {}", username);
+        handle.abort();
+    }
     info!("User {} removed from room", username);
     // list connected users
-    let users: Vec<String> = users.iter().cloned().collect();
+    let users: Vec<String> = lookup.keys().cloned().collect();
     info!("Users in room after removal: {:?}", users);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
     use tokio::sync::broadcast;
+    use tokio::task::JoinHandle;
 
     #[tokio::test]
     async fn test_remove_username() {
-        let mut user_set = HashSet::new();
-        user_set.insert("test_user".to_string());
-        user_set.insert("other_user".to_string());
+        let mut lookup_initial = HashMap::new();
+        let dummy_task: JoinHandle<Result<(), RoomError>> = tokio::spawn(async { Ok(()) });
+        lookup_initial.insert("test_user".to_string(), dummy_task);
+        let dummy_task2: JoinHandle<Result<(), RoomError>> = tokio::spawn(async { Ok(()) });
+        lookup_initial.insert("other_user".to_string(), dummy_task2);
 
         let (tx, _) = broadcast::channel(100);
         let room_state = Arc::new(RoomState {
-            user_set: Mutex::new(user_set),
             tx,
-            task_handles: Mutex::new(HashMap::new()),
+            task_handles: Mutex::new(lookup_initial),
         });
 
         // Execute removal
         remove_username("test_user".to_string(), room_state.clone()).await;
 
         // Verify user was removed
-        let users = room_state.user_set.lock().await;
-        assert!(!users.contains("test_user"));
-        assert!(users.contains("other_user"));
-        assert_eq!(users.len(), 1);
+        let lookup = room_state.task_handles.lock().await;
+        assert!(!lookup.contains_key("test_user"));
+        assert!(lookup.contains_key("other_user"));
+        assert_eq!(lookup.len(), 1);
     }
 }

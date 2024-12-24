@@ -6,7 +6,7 @@ use chatty_tcp::listen::room::serve;
 use chatty_tcp::listen::state::RoomState;
 use chatty_types::config::{setup_tracing, Component::Server};
 use chatty_types::response::ChatResponse;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
@@ -27,17 +27,12 @@ pub async fn main() -> Result<()> {
     span.in_scope(|| info!("listening on {}", listening_on));
 
     // Set up room state for use
-    let user_set = Mutex::new(HashSet::new());
     // bounded channel
     let (tx, _rx) = broadcast::channel::<ChatResponse>(100);
     // task handles
     let task_handles = Mutex::new(HashMap::new());
 
-    let room_state = Arc::new(RoomState {
-        user_set,
-        tx,
-        task_handles,
-    });
+    let room_state = Arc::new(RoomState { tx, task_handles });
 
     let mut connection_handles = Vec::new();
 
