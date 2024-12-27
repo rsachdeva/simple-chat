@@ -1,10 +1,13 @@
+## Asynchronous Chat System
+
+[![CI Pipeline](https://github.com/rsachdeva/simple-chat/actions/workflows/rust.yml/badge.svg)](https://github.com/rsachdeva/simple-chat/actions/workflows/rust.yml)
+
 ## Table of Contents
 
-- [Asynchronous Chat System](#asynchronous-chat-system)
-    - [Overview](#overview)
+- [Demo](#demo)
+- [Overview](#overview)
     - [Server Architecture](#server-architecture)
     - [Client Features](#client-features)
-- [Demo](#demo)
 - [Running Server and Client](#running-server-and-client)
 - [Configurations](#configurations)
 - [Running Tests](#running-tests)
@@ -14,9 +17,20 @@
 - [Summary of the Responsibilities for crate chatty-types and chatty-tcp in Workspace](#summary-of-the-responsibilities-for-crate-chatty-types-and-chatty-tcp-in-workspace)
 - [Domain Driven Terminology](#domain-driven-terminology)
 
-### Asynchronous Chat System
+### Demo
 
-#### Overview
+Options to view the demo:
+
+1. **Watch in Browser**: You can watch the video online.
+
+- [![Demo with Weather-Standup](demo/Weather-Standup-thumbnail.png)](https://vimeo.com/1042383973)
+
+
+2. **Download the Video**: You can download the video directly to your device.
+
+- [Download Demo with Weather-Standup](demo/Weather-Standup.mp4)
+
+### Overview
 
 A high-performance asynchronous chat system consisting of a server and CLI client implementation, designed for maximum
 throughput and concurrency.
@@ -45,10 +59,6 @@ Provides an interactive command prompt supporting:
 
 - send <MSG> for message broadcasting
 - leave for graceful disconnection
-
-### Demo
-
-[Demo with Weather-Standup](demo/Weather-Standup.mp4)
 
 ### Running Server and Client
 
