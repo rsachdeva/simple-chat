@@ -6,6 +6,7 @@ use std::io::Write;
 use std::process;
 use tokio::io::{stdin, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::tcp::OwnedWriteHalf;
+use tokio::select;
 use tokio::signal;
 use tracing::debug;
 
@@ -21,7 +22,7 @@ pub async fn send_command(writer_half: OwnedWriteHalf, username: String) -> Resu
     stdout().flush()?;
 
     loop {
-        tokio::select! {
+        select! {
             // Handle input from the user
             line = reader.next_line() => {
                 if let Ok(Some(line)) = line {
