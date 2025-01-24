@@ -1,5 +1,5 @@
 use crate::listen::response::{
-    send_from_broadcast_channel_task, send_response, send_to_broadcast_channel,
+    send_from_broadcast_channel, send_response, send_to_broadcast_channel,
 };
 use crate::listen::state::RoomState;
 use anyhow::Result;
@@ -45,7 +45,7 @@ pub async fn process_command(
 
                 let chat_response = if !user_already_exist {
                     let rx = room_state.tx.subscribe();
-                    let send_task_handle = tokio::spawn(send_from_broadcast_channel_task(
+                    let send_task_handle = tokio::spawn(send_from_broadcast_channel(
                         writer.clone(),
                         rx,
                         username.clone(),
